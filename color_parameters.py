@@ -1,43 +1,129 @@
-import numpy as np
-import cv2 
+import numpy as np 
+import cv2 as cv 
+from matplotlib import pyplot as plt 
+import imutils 
+#from transform import four_point_transform
 
-#video capture device 
-cap = cv2.VideoCapture(0)
 
-while True:
-	ret, frame = cap.read()			#take each frame
-	hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)	#conver BGR to HSV 
+#import image 
+img = cv.imread('/Users/saiddahirsaid/Desktop/flat_cube.png')
 
-	#define the upper and lower values for BLUE in HSV
-	lower_blue = np.array([110, 100, 70]) 
-	upper_blue = np.array([130,255,255])
+#resize image
+ratio = img.shape[0] / 500.0
+orig = img.copy()
+img = imutils.resize(img, height = 500)
 
-	lower_orange = np.array([10, 50, 50])
-	upper_orange = np.array([15, 255, 255])
+#convert bgr to hsv and gray. gray is for edge detection
+hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+gray = cv.GaussianBlur(gray,(3,3),0)
+#canny edge detection to find contours 
+edges = cv.Canny(gray, 80, 200)
+hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
-	lower_green = np.array([50,60,60])
-	upper_green = np.array([90,255, 255])
 
-	lower_red = np.array([[0, 70, 50], [170, 70, 50]])
-	upper_red = np.array([[10, 255, 255], [180, 255, 255]])
+#color parameters
+lower_white = np.array([0, 0, 0])
+upper_white = np.array([0, 0, 255])
 
-	#threshold the HSV image for each color 
-	mask1 = cv2.inRange(hsv, lower_orange, upper_orange)
-	mask2 = cv2.inRange(hsv, lower_blue, upper_blue)
-	mask3 = cv2.inRange(hsv, lower_green, upper_green)
+lower_blue = np.array([110, 100, 70])
+upper_blue = np.array([130,255,255])
 
-	#bitwise and mask over original image 
-	mask = cv2.bitwise_or(mask2, mask3 )
-	res = cv2.bitwise_and(frame,frame, mask= mask)
+lower_yellow = np.array([20, 100, 100])
+upper_yellow = np.array([30, 255, 255])
 
-	cv2.imshow('frame', frame)
-	cv2.imshow('mask', mask)
-	cv2.imshow('res', res)
+#orange
+lower_orange = np.array([15, 100, 50])
+upper_orange = np.array([20, 255, 255])
 
-	k = cv2.waitKey(5) & 0xFF
-	if k == 27:
-		break
+#green 
+lower_green = np.array([50,60,60])
+upper_green = np.array([90,255, 255])
 
-#close windows
-cap.release()
-cv2.destroyAllWindows()
+#red wraps around hsv, needing two masks. theres probably a better way but idk
+#lower red mask
+lower_red = np.array([0, 70, 50])
+upper_red = np.array([10, 255, 255])
+#mask0 = cv.inRange(hsv, lower_red, upper_red)
+lower_red = np.array([170, 70, 50])
+upper_red = np.array([180, 255, 255])
+#mask1 = cv.inRange(hsv, lower_red, upper_red)
+
+
+#color masks
+white_mask = cv.inRange(hsv, lower_white, upper_white)
+blue_mask = cv.inRange(hsv, lower_blue, upper_blue)
+yellow_mask = cv.inRange(hsv, lower_yellow, upper_yellow)
+orange_mask = cv.inRange(hsv, lower_orange, upper_orange)
+green_mask = cv.inRange(hsv, lower_green, upper_green)
+mask0 = cv.inRange(hsv, lower_red, upper_red)
+mask1 = cv.inRange(hsv, lower_red, upper_red)
+
+red_mask = mask0+mask1
+
+#combine all masks
+masks = white_mask+blue_mask+yellow_mask+orange_mask+green_mask+red_mask
+mask = cv.bitwise_or(masks, masks)
+
+
+def facelets():
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#find contours, and sort them by size
+contours = cv.findContours(edges.copy(), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+cnt = contours
+cnt = imutils.grab_contours(cnt)
+cnt = sorted(cnt, key = cv.contourArea, reverse = True)
+
+#contour size parameters
+for c in cnt:
+	perimeter = cv.arcLength(c,True)
+	epsilon = 0.1* perimeter
+	approx = cv.approxPolyDP(c,epsilon,True)
+
+
+	#once we find rectangle, we break 
+	if len(approx) == 4 and is  blue_mask:
+		screenCnt = approx 
+
+
+img = cv.drawContours(img, [screenCnt], -1, (0, 255, 0), 2)
+
+'''
+#use four point transform module 
+transformed = four_point_transform(orig, screenCnt.reshape(4, 2) * ratio ) 
+transformed = imutils.resize(transformed, height = 500)
+'''
+
+#geometric transformation 
+#save as new image
+cv.imshow('img', img)
+#cv.imshow('edges', edges)
+#cv.imshow('transformed', transformed)
+cv.waitKey(0)
+cv.destroyAllWindows()
+

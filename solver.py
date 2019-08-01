@@ -66,4 +66,5 @@ print(z)
 for i in z:
     if i == 'D':
         clockwise()
+        
 
